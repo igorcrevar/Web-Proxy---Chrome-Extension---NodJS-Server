@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Getting Started Extension's Popup</title>
+    <style>
+		label {
+			float: left;
+			width: 120px;
+		}
+		
+		input[type=text] {
+			width: 420px;
+		}
+	</style>
+
+    <!-- JavaScript and HTML must be in separate files for security. -->
+    <script src="index.js"></script>
+	<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script> -->
+  </head>
+  <body>
+		<div>
+			<label for="type_url">Original url</label>
+			<input type="text" id="type_url" />
+		</div>
+		
+		<div>
+			<label for="converted_url">Converted url</label>
+			<input type="text" id="converted_url" readonly="true" />
+		</div>
+		
+		<div>
+			<input type="button" id="convert_button" value="Convert" />
+			<input type="button" style="margin-left:10px" id="open_in_new_tab_button" value="Open in new tab" />
+		</div>
+  </body>
+</html>
