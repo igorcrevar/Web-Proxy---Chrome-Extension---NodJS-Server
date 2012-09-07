@@ -1,5 +1,5 @@
 {
-  "name": "My First Extension",
+  "name": "Proxy Extension",
   "version": "1.0",
   "manifest_version": 2,
   "description": "The first extension that I made.",
@@ -14,8 +14,7 @@
     "scripts": ["background.js"]
   },
   "permissions": [
-    "http://api.flickr.com/",
-	"http://ajax.googleapis.com/",
-	 "webRequest", "webRequestBlocking", "<all_urls>"
+    "http://localhost/",
+	"webRequest", "webRequestBlocking", "<all_urls>"
   ]
 }
