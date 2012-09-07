@@ -1,20 +1,20 @@
 function getRedirectUrl(url) {
 	var patterns = [
-		new RegExp('(https?:\/\/www.facebook.com)(.*)', 'i'),
-		new RegExp('(https?:\/\/fbcdn-profile(?:.*?)\.net)(.*)', 'i'),
-		new RegExp('(https?:\/\/fbcdn-sphotos(?:.*?)\.net)(.*)', 'i')
+		new RegExp('^((?:https?:\/\/)?(?:www\.)?facebook.com)(.*)$', 'i'),
+		new RegExp('^((?:https?:\/\/)?(?:www\.)?fbcdn-profile.*?\.net)(.*)$', 'i'),
+		new RegExp('^((?:https?:\/\/)?(?:www\.)?fbcdn-sphotos.*?\.net)(.*)$', 'i')
 	];
 	
 	for (var i in patterns) {
 		var pattern = patterns[i];
 		if (url.match(pattern)) {
-			url = url.replace(pattern, function(fullMatch, base, pathAndQuery) {
-				return pathAndQuery;
+			console.log('matched ' + url + ' pattern ' + pattern);
+			url = url.replace(pattern, function (fullStr, part1, part2) {
+				var encodedPart1 = encodeURIComponent(part1);
+				var encodedPart2 = encodeURIComponent(part2);
+				return 'http://localhost:9615/?path=' + encodedPart2 + '&domain=' + encodedPart1;
 			});
 			
-			var encodedPart = encodeURIComponent(url);
-			console.log(url+' '+encodedPart);
-			url = 'http://google.com/path?query=' + encodedPart;
 			return url;
 		}
 	}
