@@ -1,18 +1,24 @@
 var http = require('http');
 var https = require("https");
-var serverPort = 9615;
+var serverPort = 3013;
 
 http.createServer(function (req, res) {
 	console.log('requested full url ' + req.url);
+	
 	var parsedInput = require('url').parse(req.url, true);
 
 	var realDomain = parsedInput.query['domain'];
 	var realPath = parsedInput.query['path'];
-
-	if (!realDomain || !realPath) {
-		return;
+	if (!realPath) {
+		realPath = '/';
 	}
 
+	if (!realDomain) {
+		return;
+	}
+	
+	console.log('accepted full url ' + req.url);
+	
 	//strip prefix http or https
 	var protocolObject = http;
 	var protocolPort = 80;
@@ -28,43 +34,45 @@ http.createServer(function (req, res) {
 	});
 
 	console.log(realDomain + '  type = ' + protocolType + '  port = ' + protocolPort + '  path = ' + realPath);
-
+	
 	var options = {
 		host: realDomain,
 		port: protocolPort,
 		path: realPath,
 		method: 'GET',
-		headers: req.headers
 	};
 
-	var proxyCallRequest = protocolObject.request(options, function(proxyCallResponse) {
-		var output = '';
-		var statusCode = proxyCallResponse.statusCode;
-		var headers = proxyCallResponse.headers;
-		
-		console.log('STATUS: ' + statusCode);
-		console.log('HEADERS: ' + JSON.stringify(headers));
-		
-		proxyCallResponse.on('data', function (chunk) {
-			output += chunk;
-		});
-				
-		proxyCallResponse.on('end', function() {		
-			//res.setEncoding('utf8');
-			//res.statusCode = statusCode;
-            //res.send(result);			
-			res.writeHead(statusCode, headers);
-			res.write(output);
+	var start = new Date();
+
+	var headers = {};
+	for (var headerName in req.headers) {
+		if (headerName === 'host') {
+			//headers.host = 'www.google.rs';
+		}
+		else if (headerName != 'referer') {
+			headers[headerName] = req.headers[headerName]; 
+		}
+	}
+	
+	options.headers = headers;
+	
+	http.request(options, function(response) {
+		var isSend = false;
+		response.on('end', function() {	
+			//console.log(JSON.stringify(response.headers));
 			res.end();
 		});
+		
+		response.on('data', function (chunk) {
+			if (!isSend) {
+				isSend = true;
+				res.writeHead(response.statusCode, response.headers);
+			}
+			
+			res.write(chunk);
+		});
+	}).end();
 	
-	});
-	
-	proxyCallRequest.on('error', function(err) {
-			res.send('error: ' + err.message);
-	});
-	
-	proxyCallRequest.end();
 }).listen(serverPort);
 
 console.log('waiting on ' + serverPort);
