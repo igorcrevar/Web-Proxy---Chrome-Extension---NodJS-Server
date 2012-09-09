@@ -1,2 +1,10 @@
-TODO: 
-For now look at examples
+Web Proxy chrome extension + nodejs server
+
+setup node server
+add chrome extension
+
+Set pages which will be redirected automaticly to web proxy
+Open all other urls in web proxy mode if you wish
+
+todo:
+relative urls inside "proxied" pages, cookies, post(and other http(s) methods), lot of stuff
