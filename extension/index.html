@@ -1,21 +1,23 @@
 <!doctype html>
 <html>
   <head>
-    <title>Getting Started Extension's Popup</title>
+    <title>Web Proxy</title>
     <style>
 		label {
-			float: left;
-			width: 120px;
 		}
 		
 		input[type=text] {
 			width: 420px;
 		}
+		
+		textarea {
+			width: 420px;
+			height: 50px;
+		}
 	</style>
 
     <!-- JavaScript and HTML must be in separate files for security. -->
     <script src="index.js"></script>
-	<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script> -->
   </head>
   <body>
 		<div>
@@ -24,13 +26,28 @@
 		</div>
 		
 		<div>
-			<label for="converted_url">Converted url</label>
+			<label for="converted_url">Web proxy url</label>
 			<input type="text" id="converted_url" readonly="true" />
 		</div>
 		
 		<div>
 			<input type="button" id="convert_button" value="Convert" />
 			<input type="button" style="margin-left:10px" id="open_in_new_tab_button" value="Open in new tab" />
+			<input type="button" style="margin-left:10px" id="open_in_current_tab_button" value="Open in this tab" />
+		</div>
+		
+		<div style="margin-top:10px">
+			<label for="web_proxy_server_domain">Web proxy domain and port</label>
+			<input type="text" id="web_proxy_server_domain"/>
+		</div>
+		
+		<div>
+			<label for="web_proxy_domains">Regexs for direct redirect domains</label>
+			<textarea id="web_proxy_domains"></textarea>			
+		</div>
+		
+		<div>
+			<input type="button" id="save_settings_button" value="Save" />			
 		</div>
   </body>
 </html>

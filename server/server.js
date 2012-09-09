@@ -9,14 +9,14 @@ http.createServer(function (req, res) {
 
 	var realDomain = parsedInput.query['domain'];
 	var realPath = parsedInput.query['path'];
+	
+	if (!realDomain) {
+		return;
+	}
 	if (!realPath) {
 		realPath = '/';
 	}
 
-	if (!realDomain) {
-		return;
-	}
-	
 	console.log('accepted full url ' + req.url);
 	
 	//strip prefix http or https
@@ -24,7 +24,6 @@ http.createServer(function (req, res) {
 	var protocolPort = 80;
 	var protocolType = 'http';
 	realDomain = realDomain.replace(/(https?):\/\/(?::(\d+))?/i, function (fullMatch, protocol, port) {
-		console.log('parsed input!');
 		protocolType = protocol.toLowerCase();
 		protocolObject = protocolType === 'http' ? http : https;
 		if (port) {
@@ -42,24 +41,18 @@ http.createServer(function (req, res) {
 		method: 'GET',
 	};
 
-	var start = new Date();
-
 	var headers = {};
 	for (var headerName in req.headers) {
-		if (headerName === 'host') {
-			//headers.host = 'www.google.rs';
-		}
-		else if (headerName != 'referer') {
+		if (headerName != 'host' && headerName != 'referer') {
 			headers[headerName] = req.headers[headerName]; 
 		}
 	}
 	
 	options.headers = headers;
 	
-	http.request(options, function(response) {
+	var request = http.request(options, function(response) {
 		var isSend = false;
 		response.on('end', function() {	
-			//console.log(JSON.stringify(response.headers));
 			res.end();
 		});
 		
@@ -71,7 +64,15 @@ http.createServer(function (req, res) {
 			
 			res.write(chunk);
 		});
-	}).end();
+	});
+	
+	request.on('error', function(err){
+		console.log(err.message);
+		res.writeHead(404, {});
+		res.end();
+	});
+	
+	request.end();
 	
 }).listen(serverPort);
 

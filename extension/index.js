@@ -2,6 +2,9 @@ window.onload = function(e) {
 	function populateConvertedUrl() {
 		var url = document.getElementById("type_url").value;
 		var newUrl = chrome.extension.getBackgroundPage().backgroundObject.getRedirectUrl(url);
+		if (newUrl.length < 4 || newUrl.substr(0, 4) != 'http') {
+			newUrl = 'http://' + newUrl;
+		}
 		document.getElementById("converted_url").value = newUrl;
 		return newUrl;
 	}
@@ -11,10 +14,58 @@ window.onload = function(e) {
 	};
 	
 	document.getElementById("open_in_new_tab_button").onclick = function() {	
-		var actionUrl = populateConvertedUrl();
-		if (actionUrl.length < 4 || actionUrl.substr(0, 4) != 'http') {
-			actionUrl = 'http://' + actionUrl;
-		}
-		chrome.tabs.create({ url: actionUrl });
+		chrome.tabs.create({ url: populateConvertedUrl() });
 	};
+	
+	document.getElementById("open_in_current_tab_button").onclick = function() {	
+		chrome.tabs.query({ active: true, currentWindow : true }, function(tabs) {
+			if (tabs.length > 0) {
+				var tab = tabs[0];
+				chrome.tabs.update(tab.id, { url: populateConvertedUrl() });
+			}
+		});
+	};
+	
+	document.getElementById("save_settings_button").onclick = function() {
+		var value = document.getElementById("web_proxy_server_domain").value;
+		if (value.length < 4 || value.substr(0, 4) != 'http') {
+			value = 'http://' + value;
+		}
+		document.getElementById("web_proxy_server_domain").value = localStorage["web_proxy_server"] = value;
+		
+		value = document.getElementById("web_proxy_domains").value;
+		var values = value.split("\n");
+		var result = '';
+		var index = 0;
+		for (var i in values) {
+			value = values[i].trim();
+			if (value.length > 0) {
+				result += value + ',';
+			}
+		}
+		localStorage["web_proxy_domains"] = result.substr(0, result.length - 1);
+		
+		alert("Settings are saved!");
+	};
+	
+	var value = localStorage["web_proxy_server"];
+	if (typeof value != 'string') {
+		value = "http://localhost:3013";
+	}
+	document.getElementById("web_proxy_server_domain").value = value;
+	
+	value = localStorage["web_proxy_domains"];
+	if (typeof value != 'string') {
+		//fbcdn-profile.*?\.net fbcdn-sphotos.*?\.net fbcdn-sphotos.*?\.net
+		value = ["facebook.com", "fbcdn-sphotos.*?\.net", "fbcdn-sphotos.*?\.net"];
+	}
+	else {
+		value = value.split(",");
+	}
+	
+	var result = '';
+	for (var i in value) {
+		result += value[i].trim() + "\n";
+	}
+	document.getElementById("web_proxy_domains").value = result;
 }

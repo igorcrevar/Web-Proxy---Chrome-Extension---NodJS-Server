@@ -1,8 +1,20 @@
-var getBackgroundObject = function(patterns, redirectUrlBase) {
+var getBackgroundObject = function() {
+	var patternBase = '^((?:https?:\/\/)?(?:[^/]*?)###token###)(.*)$';
+	var redirectDomains = localStorage["web_proxy_domains"].split(',');
+	var patterns = new Array;
+	for (var i = 0; i < redirectDomains.length; ++i) {
+		base = redirectDomains[i].trim();
+		if (base.length > 0) {
+			base = patternBase.replace("###token###", base);	
+			patterns[i] = new RegExp(base, 'i');
+		}
+	}
+	
+	var redirectUrlBase = localStorage["web_proxy_server"];
 	var obj = {};
 	
 	obj.getRedirectUrl = function (url) {
-		var pattern = new RegExp('^((?:https?:\/\/)?(?:www\.)?(?:[^/]+))(.*)$', 'i');
+		var pattern = new RegExp('^((?:https?:\/\/)?(?:[^/]+))(.*)$', 'i');
 		url = url.replace(pattern, function (fullStr, part1, part2) {
 			var encodedPart1 = encodeURIComponent(part1);
 			var encodedPart2 = encodeURIComponent(part2);
@@ -28,12 +40,7 @@ var getBackgroundObject = function(patterns, redirectUrlBase) {
 	return obj;
 };
 
-//settings are changed here!
-var backgroundObject = getBackgroundObject([
-		new RegExp('^((?:https?:\/\/)?(?:www\.)?facebook.com)(.*)$', 'i'),
-		new RegExp('^((?:https?:\/\/)?(?:www\.)?fbcdn-profile.*?\.net)(.*)$', 'i'),
-		new RegExp('^((?:https?:\/\/)?(?:www\.)?fbcdn-sphotos.*?\.net)(.*)$', 'i')
-	], 'http://localhost:3013');
+var backgroundObject = getBackgroundObject();
 
 chrome.webRequest.onBeforeRequest.addListener(
 	function (request) {
