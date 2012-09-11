@@ -1,0 +1,14 @@
+{
+  "name": "Web Proxy Server",
+  "version": "0.0.1",
+  "description": "doto",
+  "author": "Igor Crevar <crewce@gmail.com>",
+  "dependencies": {
+  },
+  "devDependencies": {
+  },
+  "engines": {
+    "node": "0.8.x",
+    "npm":  "1.1.x"
+  }
+}

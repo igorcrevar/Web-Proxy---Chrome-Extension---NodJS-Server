@@ -1,78 +1,136 @@
 var http = require('http');
 var https = require("https");
+var qs = require('querystring');
 var serverPort = 3013;
+var maximumSize = 256000;
 
 http.createServer(function (req, res) {
-	console.log('requested full url ' + req.url);
-	
 	var parsedInput = require('url').parse(req.url, true);
-
-	var realDomain = parsedInput.query['domain'];
-	var realPath = parsedInput.query['path'];
-	
-	if (!realDomain) {
-		return;
-	}
-	if (!realPath) {
-		realPath = '/';
-	}
-
-	console.log('accepted full url ' + req.url);
-	
-	//strip prefix http or https
-	var protocolObject = http;
-	var protocolPort = 80;
-	var protocolType = 'http';
-	realDomain = realDomain.replace(/(https?):\/\/(?::(\d+))?/i, function (fullMatch, protocol, port) {
-		protocolType = protocol.toLowerCase();
-		protocolObject = protocolType === 'http' ? http : https;
-		if (port) {
-			protocolPort = port;
-		}
-		return '';
-	});
-
-	console.log(realDomain + '  type = ' + protocolType + '  port = ' + protocolPort + '  path = ' + realPath);
 	
 	var options = {
-		host: realDomain,
-		port: protocolPort,
-		path: realPath,
-		method: 'GET',
+		host: parsedInput.query['domain'],
+		path: parsedInput.query['path'] || '/' 
 	};
+	
+	function responseWithCode(code) {
+		code = code || 404; //default is 404 - not found
+		res.writeHead(code, {});
+		res.end();
+		return true;
+	}
 
-	var headers = {};
-	for (var headerName in req.headers) {
-		if (headerName != 'host' && headerName != 'referer') {
-			headers[headerName] = req.headers[headerName]; 
-		}
+	function recieveData(callback) {
+		var body = '';
+        req.on('data', function (data) {
+            body += data;
+            if (body.length > 1e6) {
+                // FLOOD ATTACK OR FAULTY CLIENT, NUKE REQUEST
+                req.connection.destroy();
+				responseWithCode(413); //HTTP 413 Error Code (Request Entity Too Large)
+            }
+        });
+		
+        req.on('end', function () {
+			callback(body, true);
+        });
+		
+		req.on('close', function() { //TODO: what with trailers?
+		});
 	}
 	
-	options.headers = headers;
+	function doResponse(body) {
+		options.method = req.method;
+		//strip prefix http or https
+		var protocolObject = http;
+		var protocolType = 'http';
+		options.host = options.host.replace(/(https?):\/\/(?::(\d+))?/i, function (fullMatch, protocol, port) {
+			protocolType = protocol.toLowerCase();
+			protocolObject = protocolType === 'http' ? http : https;
+			if (port) {
+				options.port = port;
+			}
+			return '';
+		});
 	
-	var request = http.request(options, function(response) {
-		var isSend = false;
-		response.on('end', function() {	
-			res.end();
+		var headers = {};
+		var cookies = {};
+		for (var headerName in req.headers) {
+			headerName = headerName.toLowerCase();
+			if (headerName != 'host' && headerName != 'referer') {
+				headers[headerName] = req.headers[headerName]; 
+			}
+		}
+		options.headers = headers;
+		//options.headers.cookies = //TODO; how???!?
+	
+		//do request to desired web site
+		var request = http.request(options, function(response) {
+			var isSend = false;
+			response.on('end', function() {	
+				if (!isSend) {
+					isSend = true;
+					res.writeHead(response.statusCode, response.headers);
+				}
+				
+				res.end();
+			});
+			
+			response.on('close', function() {	
+				if (!isSend) {
+					isSend = true;
+					res.writeHead(response.statusCode, response.headers);
+				}
+				
+				res.end();
+			});
+			
+			response.on('data', function (chunk) {
+				if (!isSend) {
+					isSend = true;
+					res.writeHead(response.statusCode, response.headers);
+				}
+				
+				res.write(chunk);
+			});
 		});
 		
-		response.on('data', function (chunk) {
-			if (!isSend) {
-				isSend = true;
-				res.writeHead(response.statusCode, response.headers);
-			}
-			
-			res.write(chunk);
+		request.on('error', function(err){
+			console.log(err.message);
+			responseWithCode();
 		});
-	});
+		
+		if (body) {
+			request.write(body);
+		}
+		
+		request.end();
+		
+		console.log();
+		console.log('Web proxy call for: ');
+		console.log(protocolType + " :// " + options.host + (options.port ? " :" + options.port : "") + " " + options.path); 		
+	}
 	
-	request.on('error', function(err){
-		console.log(err.message);
-		res.writeHead(404, {});
-		res.end();
-	});
+	function doResponseFull(body) {
+		if (!options.host) {
+			console.log("Called without host parameter - " + options.path);
+			return responseWithCode();
+		}
+		else {
+			//domain is passed encripted with base64 because of firewalls and keywords blocking!
+			options.host = new Buffer(options.host, 'base64').toString('ascii');
+		}
+		
+		doResponse(body);
+	}
 	
-	request.end();
+	if (req.method.toLowerCase() == 'post') {
+		recieveData(function(body, isOk){
+			doResponseFull(body);
+		});
+    }
+	else {
+		doResponseFull(false);
+	}
 	
 }).listen(serverPort);
 

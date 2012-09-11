@@ -34,38 +34,24 @@ window.onload = function(e) {
 		document.getElementById("web_proxy_server_domain").value = localStorage["web_proxy_server"] = value;
 		
 		value = document.getElementById("web_proxy_domains").value;
-		var values = value.split("\n");
-		var result = '';
-		var index = 0;
-		for (var i in values) {
-			value = values[i].trim();
-			if (value.length > 0) {
-				result += value + ',';
-			}
-		}
-		localStorage["web_proxy_domains"] = result.substr(0, result.length - 1);
-		
+		localStorage["web_proxy_domains"] = value;
+	
+		chrome.extension.getBackgroundPage().backgroundObject.refreshSettings();
 		alert("Settings are saved!");
 	};
 	
 	var value = localStorage["web_proxy_server"];
 	if (typeof value != 'string') {
-		value = "http://localhost:3013";
+		localStorage["web_proxy_server"] = value = "http://localhost:3013";
 	}
 	document.getElementById("web_proxy_server_domain").value = value;
 	
 	value = localStorage["web_proxy_domains"];
 	if (typeof value != 'string') {
 		//fbcdn-profile.*?\.net fbcdn-sphotos.*?\.net fbcdn-sphotos.*?\.net
-		value = ["facebook.com", "fbcdn-sphotos.*?\.net", "fbcdn-sphotos.*?\.net"];
+		localStorage["web_proxy_domains"] = value = ["[^/]*?facebook.com", "[^/]*?fbcdn[^/]*?\.net"].join("\n");
 	}
-	else {
-		value = value.split(",");
-	}
+	document.getElementById("web_proxy_domains").value = value;
 	
-	var result = '';
-	for (var i in value) {
-		result += value[i].trim() + "\n";
-	}
-	document.getElementById("web_proxy_domains").value = result;
+	chrome.extension.getBackgroundPage().backgroundObject.refreshSettings();
 }
