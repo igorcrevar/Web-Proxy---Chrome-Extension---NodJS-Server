@@ -1,7 +1,7 @@
 var http = require('http');
 var https = require("https");
 var qs = require('querystring');
-var serverPort = 3013;
+var serverPort = process.env.port || 3013;
 var maximumSize = 256000;
 
 http.createServer(function (req, res) {
@@ -23,7 +23,7 @@ http.createServer(function (req, res) {
 		var body = '';
         req.on('data', function (data) {
             body += data;
-            if (body.length > 1e6) {
+            if (body.length > maximumSize) {
                 // FLOOD ATTACK OR FAULTY CLIENT, NUKE REQUEST
                 req.connection.destroy();
 				responseWithCode(413); //HTTP 413 Error Code (Request Entity Too Large)
@@ -43,20 +43,23 @@ http.createServer(function (req, res) {
 		//strip prefix http or https
 		var protocolObject = http;
 		var protocolType = 'http';
-		options.host = options.host.replace(/(https?):\/\/(?::(\d+))?/i, function (fullMatch, protocol, port) {
+		options.host = options.host.replace(/(https?):\/\//i, function (fullMatch, protocol) {
 			protocolType = protocol.toLowerCase();
 			protocolObject = protocolType === 'http' ? http : https;
-			if (port) {
-				options.port = port;
-			}
+			return '';
+		});
+		
+		options.host = options.host.replace(/(?::(\d+))/i, function (fullMatch, port) {
+			options.port = port;
 			return '';
 		});
 	
 		var headers = {};
 		var cookies = {};
 		for (var headerName in req.headers) {
-			headerName = headerName.toLowerCase();
-			if (headerName != 'host' && headerName != 'referer') {
+			var headerName = headerName.toLowerCase();
+			if (headerName !== 'host' && headerName !== 'referer' && headerName !== 'connection-token'
+				&& headerName !== 'if-match' && headerName !== 'max-forwards' && headerName !== 'via') {
 				headers[headerName] = req.headers[headerName]; 
 			}
 		}
@@ -106,8 +109,7 @@ http.createServer(function (req, res) {
 		request.end();
 		
 		console.log();
-		console.log('Web proxy call for: ');
-		console.log(protocolType + " :// " + options.host + (options.port ? " :" + options.port : "") + " " + options.path); 		
+		console.log(protocolType + " :// " + options.host + (options.port ? " :" + options.port : "") + " " + options.path);
 	}
 	
 	function doResponseFull(body) {

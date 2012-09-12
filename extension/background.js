@@ -11,9 +11,14 @@ var getBackgroundObject = function() {
 		for (var i = 0; i < redirectDomains.length; ++i) {
 			base = redirectDomains[i].trim();
 			if (base.length > 0) {
-				base = patternBase.replace("###token###", base);	
-				patterns[i] = new RegExp(base, 'i');
-			}			
+				try {
+					base = patternBase.replace("###token###", base);	
+					var newPattern = new RegExp(base, 'i');
+					patterns[patterns.length] = newPattern;
+				}
+				catch (e) {
+				}				
+			}		
 		}
 				
 		return patterns;
