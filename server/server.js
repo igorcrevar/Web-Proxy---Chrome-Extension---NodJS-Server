@@ -1,10 +1,11 @@
 var http = require('http');
 var https = require("https");
-var qs = require('querystring');
 var serverPort = process.env.port || 3013;
 var maximumSize = 256000;
+var maximumRedirections = 8;
 
 http.createServer(function (req, res) {
+	var redirectsCount = 0;
 	var parsedInput = require('url').parse(req.url, true);
 	
 	var options = {
@@ -38,8 +39,8 @@ http.createServer(function (req, res) {
 		});
 	}
 	
-	function doResponse(body) {
-		options.method = req.method;
+	function doResponse(body, method, headers) {
+		options.method = method || req.method;
 		//strip prefix http or https
 		var protocolObject = http;
 		var protocolType = 'http';
@@ -47,54 +48,73 @@ http.createServer(function (req, res) {
 			protocolType = protocol.toLowerCase();
 			protocolObject = protocolType === 'http' ? http : https;
 			return '';
-		});
-		
-		options.host = options.host.replace(/(?::(\d+))/i, function (fullMatch, port) {
+		}).replace(/(?::(\d+))/i, function (fullMatch, port) {
 			options.port = port;
 			return '';
 		});
-	
-		var headers = {};
-		var cookies = {};
-		for (var headerName in req.headers) {
+		
+		headers = headers || req.headers;
+		options.headers = {};
+		for (var headerName in headers) {
 			var headerName = headerName.toLowerCase();
-			if (headerName !== 'host' && headerName !== 'referer' && headerName !== 'connection-token'
-				&& headerName !== 'if-match' && headerName !== 'max-forwards' && headerName !== 'via') {
-				headers[headerName] = req.headers[headerName]; 
+			if (headerName !== 'host' && headerName !== 'referer' && headerName !== 'max-forwards') {
+				options.headers[headerName] = headers[headerName]; 
 			}
 		}
-		options.headers = headers;
-		//options.headers.cookies = //TODO; how???!?
+		options.connection = 'keep-alive';
+		//options.headers.cookie = //TODO; how???!?
 	
 		//do request to desired web site
 		var request = http.request(options, function(response) {
 			var isSend = false;
-			response.on('end', function() {	
-				if (!isSend) {
+			var isRedirected = false;
+			
+			function outputHeader() {
+				if (!isSend && !isRedirected) {
 					isSend = true;
 					res.writeHead(response.statusCode, response.headers);
 				}
+			}
+			
+			function doRedirect() {
+				if (redirectsCount === maximumRedirections)
+				{
+					return responseWithCode(404); //todo: better status code
+				}
 				
-				res.end();
+				var patt = /((?:https?:\/\/)?[^\/]+)(.*)/i;
+				var result = patt.exec(response.headers.location);
+				options.host = result[1];
+				options.path = result[2];
+				redirectsCount++;
+				console.log('Redirect ' + redirectsCount + " " + options.host + " " + options.path);
+				doResponse(void 0, 'GET'); 
+				return true;
+			}
+			
+			
+			response.on('end', function() {	
+				if (response.statusCode >= 300 && response.statusCode < 400) {
+					doRedirect();
+				}
+				else {
+					outputHeader();
+					res.end();
+				}
 			});
 			
 			response.on('close', function() {	
-				if (!isSend) {
-					isSend = true;
-					res.writeHead(response.statusCode, response.headers);
+				if (!isRedirected) {
+					outputHeader();
+					res.end();
 				}
-				
-				res.end();
 			});
 			
 			response.on('data', function (chunk) {
-				if (!isSend) {
-					isSend = true;
-					res.writeHead(response.statusCode, response.headers);
-				}
-				
+				outputHeader();
 				res.write(chunk);
 			});
+
 		});
 		
 		request.on('error', function(err){
@@ -109,7 +129,7 @@ http.createServer(function (req, res) {
 		request.end();
 		
 		console.log();
-		console.log(protocolType + " :// " + options.host + (options.port ? " :" + options.port : "") + " " + options.path);
+		console.log(protocolType + " :// " + options.host + (options.port ? " : " + options.port : "") + " " + options.path);
 	}
 	
 	function doResponseFull(body) {
