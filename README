@@ -9,7 +9,7 @@ Set pages which will be redirected automaticly to web proxy
 Open all other urls in web proxy mode if you wish
 
 todo:
-relative urls inside "proxied" pages, cookies
+cookies
 
-
-for now this is only good for single pages(pictures :)) of banned sites
+for now, server does not do http(s) request with cookies.
+Works with relative urls, but if you open relative url in new tab you must be sure to use only one site at time.

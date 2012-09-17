@@ -1,6 +1,6 @@
 var http = require('http');
 var https = require("https");
-var serverPort = process.env.port || 3013;
+var serverPort = process.env.port || 8080;
 var maximumSize = 256000;
 var maximumRedirections = 8;
 
