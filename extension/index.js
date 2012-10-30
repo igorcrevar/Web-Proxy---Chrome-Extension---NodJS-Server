@@ -1,27 +1,28 @@
 window.onload = function(e) {   
-	function populateConvertedUrl() {
+	function populateConvertedUrl(tabId, addToPatterns) {
+		var bgObject = chrome.extension.getBackgroundPage().backgroundObject;
 		var url = document.getElementById("type_url").value;
-		var newUrl = chrome.extension.getBackgroundPage().backgroundObject.getRedirectUrl(url);
+		if (addToPatterns) {
+			bgObject.addToPatterns(url, false);
+		}
+		var newUrl = bgObject.getRedirectUrl(url, true, tabId);
 		if (newUrl.length < 4 || newUrl.substr(0, 4) != 'http') {
 			newUrl = 'http://' + newUrl;
-		}
-		document.getElementById("converted_url").value = newUrl;
+		}		
 		return newUrl;
 	}
 	
-	document.getElementById("convert_button").onclick = function() {
-		populateConvertedUrl();
-	};
-	
 	document.getElementById("open_in_new_tab_button").onclick = function() {	
-		chrome.tabs.create({ url: populateConvertedUrl() });
+		var newUrl = populateConvertedUrl(void 0, true);
+		chrome.tabs.create({ url: newUrl });
 	};
 	
 	document.getElementById("open_in_current_tab_button").onclick = function() {	
 		chrome.tabs.query({ active: true, currentWindow : true }, function(tabs) {
 			if (tabs.length > 0) {
 				var tab = tabs[0];
-				chrome.tabs.update(tab.id, { url: populateConvertedUrl() });
+				var newUrl = populateConvertedUrl(tab.id, true);
+				chrome.tabs.update(tab.id, { url: newUrl });
 			}
 		});
 	};
