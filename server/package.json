@@ -7,5 +7,9 @@
   "version": "0.0.1-4",
   "engines": {
     "node": "0.8.x"
+  },
+  "dependencies": {
+    "connect": ">= 0.8",
+    "mongodb": ">= 0.1.0"
   }
 }
