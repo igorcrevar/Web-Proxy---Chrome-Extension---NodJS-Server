@@ -1,5 +1,5 @@
 var backgroundObject = (function() {
-	var patterns, redirectUrlBase;
+	var patterns, redirectUrlBase, isAutomaticRedirectEnabled = true;
 	//if url is relative and open in same tab tabUrlMap will help to redirect url too real url
 	var tabUrlMap = [];
 	//for relative urls we remember last valid redirected url. 
@@ -50,7 +50,10 @@ var backgroundObject = (function() {
 	obj.refreshSettings = function() {
 		patterns = getPatterns();
 		redirectUrlBase = localStorage["web_proxy_server"];
+		isAutomaticRedirectEnabled = localStorage["automatic_redirect_enabled"] === 'true' ? true : false;
 	}
+	
+	obj.isAutomaticRedirectEnabled = function() { return isAutomaticRedirectEnabled; }
 	
 	obj.addToPatterns = function(str, isDomain) {
 		if (!isDomain) {
@@ -160,9 +163,11 @@ var backgroundObject = (function() {
 
 chrome.webRequest.onBeforeRequest.addListener(
 	function (details) {
-		var newUrl = backgroundObject.getRedirectUrl(details.url, details.type === 'main_frame', details.tabId);
-		if (newUrl) {
-			return { redirectUrl: newUrl }
+		if (backgroundObject.isAutomaticRedirectEnabled()) {
+			var newUrl = backgroundObject.getRedirectUrl(details.url, details.type === 'main_frame', details.tabId);
+			if (newUrl) {
+				return { redirectUrl: newUrl }
+			}
 		}
 	},
 	{

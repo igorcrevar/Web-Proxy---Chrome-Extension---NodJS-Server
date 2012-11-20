@@ -37,6 +37,9 @@ window.onload = function(e) {
 		value = document.getElementById("web_proxy_domains").value;
 		localStorage["web_proxy_domains"] = value;
 	
+		value = document.getElementById("automatic_redirect_enabled").checked;
+		localStorage["automatic_redirect_enabled"] = value;
+		
 		chrome.extension.getBackgroundPage().backgroundObject.refreshSettings();
 		alert("Settings are saved!");
 	};
@@ -53,6 +56,9 @@ window.onload = function(e) {
 		localStorage["web_proxy_domains"] = value = ["[^/]*?facebook.com", "[^/]*?fbcdn[^/]*?\.net"].join("\n");
 	}
 	document.getElementById("web_proxy_domains").value = value;
+	
+	value = localStorage["automatic_redirect_enabled"];
+	document.getElementById("automatic_redirect_enabled").checked = typeof(value) != 'undefined' && value === 'true' ? true : false;
 	
 	chrome.extension.getBackgroundPage().backgroundObject.refreshSettings();
 }
