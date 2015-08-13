@@ -97,24 +97,29 @@ var backgroundObject = (function() {
 		return url.substr(redirectUrlBase.length);
 	}
 	
-	obj.getDirFromPathWithFileOnTheEnd = function(path) {
-		if (path) {
-			var lastSlash = path.lastIndexOf('/'); //must contains slash and not on the first place
-			if (lastSlash > 0) {
-				var pos = path.indexOf('?');
-				if (pos === -1) {
-					pos = path.indexOf('&'); //first &
-				}
-				if (pos === -1) {
-					pos = path.length;
-				}
-				if  ((pos > 4 && path.charAt(pos - 4) == '.') || //case like .php
-					(path > 5 && path.charAt(pos - 5) == '.')) { //case like .php5
-					return path.substr(0, lastSlash);
-				}
+	obj.getCorrectPath = function(path) {
+		if (!path || path === '/') {
+			return '';
+		}
+		
+		var ind;
+		if ((ind = path.indexOf('?')) !== -1) {
+			path = path.substr(0, ind);
+		}
+		else if ((ind = path.indexOf('&')) !== -1) {
+			path = path.substr(0, ind);
+		}
+		
+		if (path && path !== '/' && path[0] === '/') {
+			ind = path.lastIndexOf('/');
+			if (ind === 0) {
+				return path;
 			}
-		}		
-		return false;
+			
+			return path.substr(0, ind);
+		}
+		
+		return '';
 	}
 	
 	obj.getRedirectUrl = function (url, isMainFrame, tabId) {
@@ -126,14 +131,14 @@ var backgroundObject = (function() {
 			var parsed = this.parse(url);
 			if (parsed && parsed.length === 3 && this.isPatternMatched(parsed[1])) {
 				//only remember domain before redirection if its main frame
-				if (isMainFrame) {
-					var relUrlData = { domain: parsed[1], path: this.getDirFromPathWithFileOnTheEnd(parsed[2]) };
+				if (isMainFrame) 
+				{
+					var relUrlData = { domain: parsed[1], path: this.getCorrectPath(parsed[2]) };
 					tabUrlMap[tabId] = relUrlData; 
 					lastValidDomainBeforeRedirection = relUrlData;
 				}
 			
 				var newUrl = this.getRedirectUrlForDomainPath(parsed[1], parsed[2]);			
-				//console.log('matched ' + url + ' pattern ' + pattern + ' newUrl = ' + newUrl);
 				return newUrl;
 			}
 		}
@@ -141,13 +146,11 @@ var backgroundObject = (function() {
 		else if (!this.isContainsDomainAndPath(url)) {
 			var relUrlData = (tabId !== void 0 ? tabUrlMap[tabId] : 0) || lastValidDomainBeforeRedirection;
 			if (relUrlData) {
-				//update lastValidDomainBeforeRedirection! 
-				lastValidDomainBeforeRedirection = relUrlData;
-				var path = this.getPathFromAlreadyRedirectedUrl(url);	
-				if (relUrlData.path) {
-					path = relUrlData.path + path;
+				var path = relUrlData.path + this.getPathFromAlreadyRedirectedUrl(url);
+				if (isMainFrame) {
+					//relUrlData.path = this.getCorrectPath(path); // update path if needed
+					lastValidDomainBeforeRedirection = relUrlData; //update lastValidDomainBeforeRedirection! 
 				}
-				console.log('base url change = ' + relUrlData.domain + "  " + path);
 				var newUrl = this.getRedirectUrlForDomainPath(relUrlData.domain, path);
 				return newUrl;
 			}
