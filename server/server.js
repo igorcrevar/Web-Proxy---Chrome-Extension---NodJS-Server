@@ -1,5 +1,5 @@
 var connect = require('connect'), http = require('http'), https = require('https');
-var serverPort = process.env.port || 8080;
+var serverPort = process.env.port || 80;
 
 var webproxy = require('./webproxy').create();
 webproxy.init(http, https);
