@@ -1,5 +1,6 @@
 var connect = require('connect'), http = require('http'), https = require('https');
-var serverPort = 80;
+var serverPort = process.env.OPENSHIFT_NODEJS_PORT;
+var serverIP = process.env.OPENSHIFT_NODEJS_IP;
 
 var webproxy = require('./webproxy').create();
 webproxy.init(http, https);
@@ -13,4 +14,4 @@ var app = connect()
     	webproxy.invoke(req, res);
   });
 
-http.createServer(app).listen(serverPort);
+http.createServer(app).listen(serverPort, serverIP);
